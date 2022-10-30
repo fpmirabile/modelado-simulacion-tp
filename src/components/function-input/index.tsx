@@ -11,15 +11,14 @@ const functionPreffix = "f(x)=";
 export function MathInput({ onInputChange }: PropTypes) {
   const inputRef = React.useRef<HTMLInputElement>(null);
   const [invalidInput, setInvalidInput] = React.useState<boolean>(false);
-  const [value, setValue] = React.useState<string>("x^2+3");
+  const [value, setValue] = React.useState<string>("x");
   const mathViewRef = React.useRef<MathViewRef>(null);
 
   const onChange = React.useCallback(
     (newValue: string) => {
-      console.log(newValue);
       setValue(newValue);
       if (onInputChange) {
-        onInputChange(newValue);
+        onInputChange(functionPreffix + newValue);
       }
     },
     [setValue, onInputChange]
