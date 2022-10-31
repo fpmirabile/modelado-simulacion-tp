@@ -21,6 +21,7 @@ export type MatrixValues = {
 };
 
 function App() {
+  const [enableArrows, setEnableArrows] = React.useState<boolean>(false);
   const [showRootsInChart, setRootsInChart] = React.useState<boolean>(false);
   const [isUsingFunction, setUsingFunction] = React.useState<boolean>(false);
   const [xFunction, setXFunction] = React.useState<string>("");
@@ -93,6 +94,12 @@ function App() {
           />
           <Stack direction="row">
             <InputLabel style={{ alignSelf: "center" }}>
+              Mostrar flechas
+            </InputLabel>
+            <Switch onChange={(_, checked) => setEnableArrows(checked)} />
+          </Stack>
+          <Stack direction="row">
+            <InputLabel style={{ alignSelf: "center" }}>
               Raices en el chart:{" "}
             </InputLabel>
             <Switch
@@ -104,11 +111,10 @@ function App() {
         </Stack>
         <div>
           <LinearGraph
+            enableArrows={enableArrows}
             isUsingDeterminant={!isUsingFunction}
             xFunction={xFunction}
             yFunction={yFunction}
-            determinant={determinant()}
-            trace={trace()}
             matrixValues={matrixValues}
           />
         </div>

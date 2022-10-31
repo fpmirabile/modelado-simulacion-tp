@@ -1,20 +1,8 @@
 import { curveCatmullRom } from "d3-shape";
 import * as React from "react";
-import {
-  CustomSVGSeries,
-  DecorativeAxis,
-  HorizontalGridLines,
-  LineSeries,
-  VerticalGridLines,
-  XAxis,
-  XYPlot,
-  YAxis,
-} from "react-vis";
+import { CustomSVGSeries, DecorativeAxis, LineSeries, XYPlot } from "react-vis";
 import { parser as mathParser, Parser, eigs } from "mathjs";
-import {
-  createRangeBetweenNumbers,
-  // quadraticSolver,
-} from "../../util/math-helper";
+import { createRangeBetweenNumbers } from "../../util/math-helper";
 import { MatrixValues } from "../../App";
 
 const getValuesForFunction = (f: Parser) => {
@@ -30,62 +18,111 @@ const getValuesForFunction = (f: Parser) => {
 
 interface PropTypes {
   isUsingDeterminant: boolean;
-  determinant: number;
-  trace: number;
   xFunction: string;
   yFunction: string;
   matrixValues: MatrixValues;
+  enableArrows: boolean;
 }
 
 export function LinearGraph({
   xFunction,
   yFunction,
   isUsingDeterminant,
-  determinant,
-  trace,
   matrixValues,
+  enableArrows,
 }: PropTypes) {
+  const xFunctionFinal = React.useCallback(() => {
+    const { a, b } = matrixValues;
+    return isUsingDeterminant
+      ? `f(x)=${a < 0 || Math.abs(a) === 1 ? a * -1 : a}*x/${
+          Math.abs(b) === 1 ? b * -1 : b
+        }`
+      : xFunction;
+  }, [matrixValues, isUsingDeterminant, xFunction]);
+
+  const yFunctionFinal = React.useCallback(() => {
+    const { c, d } = matrixValues;
+    return isUsingDeterminant
+      ? `f(x)=${c < 0 || Math.abs(c) === 1 ? c * -1 : c}*x/${
+          Math.abs(d) === 1 ? d * -1 : d
+        }`
+      : yFunction;
+  }, [isUsingDeterminant, matrixValues, yFunction]);
+
   const calculateXNulclines = React.useCallback(() => {
     try {
-      const { a, b, c, d } = matrixValues;
       const parser = mathParser();
-      const xFinalFunc = isUsingDeterminant
-        ? `f(x)=${a < 0 || Math.abs(a) === 1 ? a * -1 : a}*x/${
-            Math.abs(b) === 1 ? b * -1 : b
-          }`
-        : xFunction;
-      parser.evaluate(xFinalFunc);
+      parser.evaluate(xFunctionFinal());
       const xNulclines = getValuesForFunction(parser);
       parser.clear();
-      const yFinalFunction = isUsingDeterminant
-        ? `f(x)=${c < 0 || Math.abs(c) === 1 ? c * -1 : c}*x/${
-            Math.abs(d) === 1 ? d * -1 : d
-          }`
-        : yFunction;
-      parser.evaluate(yFinalFunction);
-      console.log("a", a, "c", c, "x", xFinalFunc, "y", yFinalFunction);
+      parser.evaluate(yFunctionFinal());
       const yNulclines = getValuesForFunction(parser);
       return [xNulclines, yNulclines];
     } catch (e) {
       return [[{ x: 0, y: 0 }], [{ x: 0, y: 0 }]];
     }
-  }, [xFunction, yFunction, isUsingDeterminant, matrixValues]);
+  }, [xFunctionFinal, yFunctionFinal]);
 
   const calculateEigenVectors = React.useCallback(() => {
+    const { a, b, c, d } = matrixValues;
+    if (a === 0 && b === 0 && c === 0 && d === 0) {
+      return [];
+    }
+
     try {
-      const a = [
-        [matrixValues.a, matrixValues.b],
-        [matrixValues.c, matrixValues.d],
+      const matrix = [
+        [a, b],
+        [c, d],
       ];
-      const eigen = eigs(a);
+      const eigen = eigs(matrix);
       const vectors = eigen.vectors as number[][];
+      console.log(vectors);
       return [
         [vectors[0][0], vectors[0][1]],
         [vectors[1][0], vectors[1][1]],
       ];
     } catch {
-      return [[0], [0]];
+      return [];
     }
+  }, [matrixValues]);
+
+  const arrows = React.useCallback(() => {
+    const { a, b, c, d } = matrixValues;
+    if (a === 0 && b === 0 && c === 0 && d === 0) {
+      return [];
+    }
+
+    const derivativeX = `f(x, y)=${a}*x+${b}*y`;
+    const derivativeY = `f(x, y)=${c}*x+${d}*y`;
+    const up = "45deg";
+    const down = "-135deg";
+    const right = "135deg";
+    const left = "-45deg";
+    const parser = mathParser();
+    parser.evaluate(derivativeX);
+    const aboveXNumber = parser.evaluate("f(10, 0)");
+    const aboveX = aboveXNumber > 0 ? right : left;
+
+    const belowXNumber = parser.evaluate("f(-10, 0)");
+    const belowX = belowXNumber > 0 ? right : left;
+
+    parser.clear();
+    parser.evaluate(derivativeY);
+    const aboveYNumber = parser.evaluate("f(0, 10)");
+    const aboveY = aboveYNumber > 0 ? up : down;
+
+    const belowYNumber = parser.evaluate("f(0, -10)");
+    const belowY = belowYNumber > 0 ? up : down;
+    return [
+      [
+        { direction: aboveX, position: { x: 5, y: 10 } },
+        { direction: belowX, position: { x: -5, y: -9 } },
+      ],
+      [
+        { direction: aboveY, position: { x: 2, y: 10 } },
+        { direction: belowY, position: { x: -1, y: -10 } },
+      ],
+    ];
   }, [matrixValues]);
 
   const eigenVectors = calculateEigenVectors();
@@ -97,17 +134,18 @@ export function LinearGraph({
     x: eigenVectors[1][0] * 12,
     y: eigenVectors[1][1] * 12,
   };
+
   return (
     <div>
+      {(isNaN(v1.x) || isNaN(v1.y) || isNaN(v2.x) || isNaN(v2.y)) && (
+        <span>Numeros complejos (Imaginarios)</span>
+      )}
       <XYPlot height={600} width={1200}>
-        <XAxis />
-        <YAxis />
-        <HorizontalGridLines />
-        <VerticalGridLines />
         <DecorativeAxis
           axisDomain={[-100, 100]}
           axisStart={{ x: -100, y: 0 }}
           axisEnd={{ x: 100, y: 0 }}
+          tickValue={() => ""}
         />
         <DecorativeAxis
           axisDomain={[-100, 100]}
@@ -117,19 +155,19 @@ export function LinearGraph({
         <LineSeries
           className="first-series"
           data={calculateXNulclines()[0]}
-          color="red"
+          color="gray"
           curve={curveCatmullRom.alpha(0.5)}
           strokeStyle="dashed"
         />
         <LineSeries
           className="first-series"
           data={calculateXNulclines()[1]}
-          color="blue"
+          color="gray"
           curve={curveCatmullRom.alpha(0.5)}
           strokeStyle="dashed"
         />
         <LineSeries
-          color="green"
+          color="red"
           data={[
             {
               x: 0,
@@ -139,16 +177,40 @@ export function LinearGraph({
           ]}
         />
         <LineSeries
-          color="red"
+          color="green"
           data={[
             {
               x: 0,
               y: 0,
             },
-            v2
+            v2,
           ]}
         />
-        <CustomSVGSeries
+        {enableArrows &&
+          arrows().map((arrows) => {
+            return arrows.map((arrow) => {
+              return (
+                <CustomSVGSeries
+                  className="custom-marking"
+                  data={[arrow.position]}
+                  customComponent={(row) => {
+                    return (
+                      <g
+                        style={{ rotate: arrow.direction }}
+                        className="inner-inner-component"
+                      >
+                        <path
+                          d="M3.41 2H16V0H1a1 1 0 0 0-1 1v16h2V3.41l28.29 28.3 1.41-1.41z"
+                          data-name="7-Arrow Up"
+                        />
+                      </g>
+                    );
+                  }}
+                />
+              );
+            });
+          })}
+        {/* <CustomSVGSeries
           className="custom-marking"
           data={[
             { x: 2, y: 5 },
@@ -156,10 +218,7 @@ export function LinearGraph({
           ]}
           customComponent={(row) => {
             return (
-              <g
-                style={{ rotate: row.x === 2 ? "45deg" : "150deg" }}
-                className="inner-inner-component"
-              >
+              <g style={{ rotate: "-45deg" }} className="inner-inner-component">
                 <path
                   d="M3.41 2H16V0H1a1 1 0 0 0-1 1v16h2V3.41l28.29 28.3 1.41-1.41z"
                   data-name="7-Arrow Up"
@@ -167,7 +226,7 @@ export function LinearGraph({
               </g>
             );
           }}
-        />
+        /> */}
       </XYPlot>
     </div>
   );
