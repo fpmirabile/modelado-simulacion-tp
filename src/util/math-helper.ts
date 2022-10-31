@@ -31,27 +31,36 @@ export const quadraticSolver = (a: number, b: number, c: number) => {
     console.log(
       `The roots of quadratic equation are ${realPart} + ${imgPart}i and ${realPart} - ${imgPart}i`
     );
-    return [`${realPart} + ${imgPart}i`, `${realPart} - ${imgPart}i`]
+    return [`${realPart} + ${imgPart}i`, `${realPart} - ${imgPart}i`];
   }
 };
 
-export const createRangeBetweenNumbers = (min: number, max: number): number[] => {
+export const createRangeBetweenNumbers = (
+  min: number,
+  max: number
+): number[] => {
   if (max <= min || min >= max) {
     return [];
   }
-  
+
   const result = [];
   for (var x = min; x <= max; x++) {
     result.push(x);
   }
 
   return result;
-}
+};
 
 export const calculateTrace = (a: number, d: number) => {
   return a + d;
-}
+};
 
-export const calculateDeterminant = (a: number, b: number, c: number, d: number) => {
-  return (a*d) - (b*c);
-}
+export const calculateDeterminant = (
+  a: number,
+  b: number,
+  c: number,
+  d: number
+) => {
+  return a * d - b * c;
+};
+

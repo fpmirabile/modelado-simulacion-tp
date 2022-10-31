@@ -2,6 +2,7 @@ import { curveCatmullRom } from "d3-shape";
 import * as React from "react";
 import {
   CustomSVGSeries,
+  DecorativeAxis,
   HorizontalGridLines,
   LineSeries,
   VerticalGridLines,
@@ -9,7 +10,7 @@ import {
   XYPlot,
   YAxis,
 } from "react-vis";
-import { parser as mathParser, Parser, eigs, transpose, column, multiply } from "mathjs";
+import { parser as mathParser, Parser, eigs } from "mathjs";
 import {
   createRangeBetweenNumbers,
   // quadraticSolver,
@@ -46,46 +47,56 @@ export function LinearGraph({
 }: PropTypes) {
   const calculateXNulclines = React.useCallback(() => {
     try {
+      const { a, b, c, d } = matrixValues;
       const parser = mathParser();
-      parser.evaluate(
-        isUsingDeterminant
-          ? `f(x)=(${matrixValues.a}x)/${matrixValues.b > 0 ? "-" : ""}${
-              matrixValues.b
-            }`
-          : xFunction
-      );
+      const xFinalFunc = isUsingDeterminant
+        ? `f(x)=${a < 0 || Math.abs(a) === 1 ? a * -1 : a}*x/${
+            Math.abs(b) === 1 ? b * -1 : b
+          }`
+        : xFunction;
+      parser.evaluate(xFinalFunc);
       const xNulclines = getValuesForFunction(parser);
       parser.clear();
-      parser.evaluate(
-        isUsingDeterminant
-          ? `f(x)=(${matrixValues.c}x)/${matrixValues.d > 0 ? "-" : ""}${
-              matrixValues.d
-            }`
-          : yFunction
-      );
+      const yFinalFunction = isUsingDeterminant
+        ? `f(x)=${c < 0 || Math.abs(c) === 1 ? c * -1 : c}*x/${
+            Math.abs(d) === 1 ? d * -1 : d
+          }`
+        : yFunction;
+      parser.evaluate(yFinalFunction);
+      console.log("a", a, "c", c, "x", xFinalFunc, "y", yFinalFunction);
       const yNulclines = getValuesForFunction(parser);
       return [xNulclines, yNulclines];
     } catch (e) {
-      return [];
+      return [[{ x: 0, y: 0 }], [{ x: 0, y: 0 }]];
     }
   }, [xFunction, yFunction, isUsingDeterminant, matrixValues]);
 
   const calculateEigenVectors = React.useCallback(() => {
-    // const roots = quadraticSolver(1, -trace, determinant);
-    const a = [[matrixValues.a, matrixValues.b], [matrixValues.c, matrixValues.d]];
-    // const traspuesta = transpose(a);
-    const values = eigs(a);
-    multiply(a, column(values.vectors, 0));
-    const b = multiply(transpose(values.vectors), a);
-    const c = multiply(b, values.vectors);
-    console.log(c);
-    // values.forEach((value) => {
-    //   const nul = eigs([[matrixValues.a + value, matrixValues.b], [matrixValues.c, matrixValues.d + value]]);
-    //   console.log('nul', nul);
-    // })
+    try {
+      const a = [
+        [matrixValues.a, matrixValues.b],
+        [matrixValues.c, matrixValues.d],
+      ];
+      const eigen = eigs(a);
+      const vectors = eigen.vectors as number[][];
+      return [
+        [vectors[0][0], vectors[0][1]],
+        [vectors[1][0], vectors[1][1]],
+      ];
+    } catch {
+      return [[0], [0]];
+    }
   }, [matrixValues]);
 
-  calculateEigenVectors();
+  const eigenVectors = calculateEigenVectors();
+  const v1 = !!eigenVectors[0] && {
+    x: eigenVectors[0][0] * 12,
+    y: eigenVectors[0][1] * 12,
+  };
+  const v2 = !!eigenVectors[1] && {
+    x: eigenVectors[1][0] * 12,
+    y: eigenVectors[1][1] * 12,
+  };
   return (
     <div>
       <XYPlot height={600} width={1200}>
@@ -93,6 +104,16 @@ export function LinearGraph({
         <YAxis />
         <HorizontalGridLines />
         <VerticalGridLines />
+        <DecorativeAxis
+          axisDomain={[-100, 100]}
+          axisStart={{ x: -100, y: 0 }}
+          axisEnd={{ x: 100, y: 0 }}
+        />
+        <DecorativeAxis
+          axisDomain={[-100, 100]}
+          axisStart={{ x: 0, y: -100 }}
+          axisEnd={{ x: 0, y: 100 }}
+        />
         <LineSeries
           className="first-series"
           data={calculateXNulclines()[0]}
@@ -103,9 +124,29 @@ export function LinearGraph({
         <LineSeries
           className="first-series"
           data={calculateXNulclines()[1]}
-          color="red"
+          color="blue"
           curve={curveCatmullRom.alpha(0.5)}
           strokeStyle="dashed"
+        />
+        <LineSeries
+          color="green"
+          data={[
+            {
+              x: 0,
+              y: 0,
+            },
+            v1,
+          ]}
+        />
+        <LineSeries
+          color="red"
+          data={[
+            {
+              x: 0,
+              y: 0,
+            },
+            v2
+          ]}
         />
         <CustomSVGSeries
           className="custom-marking"
@@ -115,11 +156,14 @@ export function LinearGraph({
           ]}
           customComponent={(row) => {
             return (
-              <g style={{ rotate: row.x === 2 ? '45deg' : '150deg' }} className="inner-inner-component">
-                  <path
-                    d="M3.41 2H16V0H1a1 1 0 0 0-1 1v16h2V3.41l28.29 28.3 1.41-1.41z"
-                    data-name="7-Arrow Up"
-                  />
+              <g
+                style={{ rotate: row.x === 2 ? "45deg" : "150deg" }}
+                className="inner-inner-component"
+              >
+                <path
+                  d="M3.41 2H16V0H1a1 1 0 0 0-1 1v16h2V3.41l28.29 28.3 1.41-1.41z"
+                  data-name="7-Arrow Up"
+                />
               </g>
             );
           }}
