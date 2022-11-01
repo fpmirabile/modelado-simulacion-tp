@@ -69,7 +69,7 @@ function App() {
       <AppBar position="static">
         <Toolbar>
           <Typography variant="h4" color="inherit">
-            Sistemas homogeneos
+            Sistemas lineales homogéneos
           </Typography>
         </Toolbar>
       </AppBar>

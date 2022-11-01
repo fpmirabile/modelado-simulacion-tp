@@ -126,20 +126,33 @@ export function LinearGraph({
   }, [matrixValues]);
 
   const eigenVectors = calculateEigenVectors();
-  const v1 = !!eigenVectors[0] && {
-    x: eigenVectors[0][0] * 12,
-    y: eigenVectors[0][1] * 12,
-  };
-  const v2 = !!eigenVectors[1] && {
-    x: eigenVectors[1][0] * 12,
-    y: eigenVectors[1][1] * 12,
-  };
+  const v1 = !!eigenVectors[0] && [
+    {
+      x: eigenVectors[0][0] * 12,
+      y: eigenVectors[0][1] * 12,
+    },
+    {
+      x: -eigenVectors[0][0] * 12,
+      y: -eigenVectors[0][1] * 12,
+    },
+  ];
+  const v2 = !!eigenVectors[1] && [
+    {
+      x: eigenVectors[1][0] * 12,
+      y: eigenVectors[1][1] * 12,
+    },
+    {
+      x: -eigenVectors[1][0] * 12,
+      y: -eigenVectors[1][1] * 12,
+    },
+  ];
 
   return (
     <div>
-      {(isNaN(v1.x) || isNaN(v1.y) || isNaN(v2.x) || isNaN(v2.y)) && (
-        <span>Numeros complejos (Imaginarios)</span>
-      )}
+      {v1.some((value) => isNaN(value.x) || isNaN(value.y)) ||
+        (v2.some((value) => isNaN(value.x) || isNaN(value.y)) && (
+          <span>Numeros complejos (Imaginarios)</span>
+        ))}
       <XYPlot height={600} width={1200}>
         <DecorativeAxis
           axisDomain={[-100, 100]}
@@ -173,7 +186,7 @@ export function LinearGraph({
               x: 0,
               y: 0,
             },
-            v1,
+            ...v1,
           ]}
         />
         <LineSeries
@@ -183,7 +196,7 @@ export function LinearGraph({
               x: 0,
               y: 0,
             },
-            v2,
+            ...v2,
           ]}
         />
         {enableArrows &&
