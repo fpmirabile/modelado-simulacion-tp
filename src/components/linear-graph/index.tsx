@@ -126,26 +126,30 @@ export function LinearGraph({
   }, [matrixValues]);
 
   const eigenVectors = calculateEigenVectors();
-  const v1 = !!eigenVectors[0] && [
-    {
-      x: eigenVectors[0][0] * 12,
-      y: eigenVectors[0][1] * 12,
-    },
-    {
-      x: -eigenVectors[0][0] * 12,
-      y: -eigenVectors[0][1] * 12,
-    },
-  ];
-  const v2 = !!eigenVectors[1] && [
-    {
-      x: eigenVectors[1][0] * 12,
-      y: eigenVectors[1][1] * 12,
-    },
-    {
-      x: -eigenVectors[1][0] * 12,
-      y: -eigenVectors[1][1] * 12,
-    },
-  ];
+  const v1 =
+    (!!eigenVectors[0] && [
+      {
+        x: eigenVectors[0][0] * 12,
+        y: eigenVectors[0][1] * 12,
+      },
+      {
+        x: -eigenVectors[0][0] * 12,
+        y: -eigenVectors[0][1] * 12,
+      },
+    ]) ||
+    [];
+  const v2 =
+    (!!eigenVectors[1] && [
+      {
+        x: eigenVectors[1][0] * 12,
+        y: eigenVectors[1][1] * 12,
+      },
+      {
+        x: -eigenVectors[1][0] * 12,
+        y: -eigenVectors[1][1] * 12,
+      },
+    ]) ||
+    [];
 
   return (
     <div>
